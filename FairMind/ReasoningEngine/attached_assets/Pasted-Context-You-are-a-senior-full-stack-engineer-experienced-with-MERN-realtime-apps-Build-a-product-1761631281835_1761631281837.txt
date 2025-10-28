@@ -1,0 +1,113 @@
+Context: You are a senior full-stack engineer experienced with MERN + realtime apps. Build a production-ready prototype of FairMind — an AI argument resolver (two-person rooms, text + voice input, AI-generated 3 resolution options, voting, saved history). The app must require authentication for any use: clicking any button on the initial page must take users to login/register. The login/register flow must collect name, age, gender (roll-up options: Male, Female, Prefer not to say), email, and password. Also implement Google (Gmail) OAuth sign-in and make it working in the Replit environment. Provide code, explanations, secure defaults, and deployment instructions.
+
+Deliverables (must return a single zipped project or a Replit-ready project):
+
+Full-stack MERN app scaffold (TypeScript preferred; JS acceptable). Frontend: React + Vite or Next.js. Backend: Node.js + Express (or Next API routes). Use Socket.io for realtime rooms.
+
+Auth system:
+
+Register & Login endpoints (bcrypt hashed password).
+
+JWT access token + secure HttpOnly cookie.
+
+Google OAuth using passport-google-oauth20 (or NextAuth if using Next.js). Include clear steps to configure Google Cloud OAuth credentials and Replit secrets.
+
+Enforce auth on all UI actions: any click on entry page → redirect to /auth/login.
+
+User schema: { _id, name, age, gender, email, passwordHash, googleId, createdAt }.
+
+Room & argument flow:
+
+Create room endpoint → returns a short room code and socket.io room.
+
+Socket.io messaging supporting text messages and attachments (voice files).
+
+Store messages in MongoDB with { senderId, text, transcript, isVoice, timestamp }.
+
+Voice handling:
+
+Endpoint to upload audio (or send Base64 from browser). Transcribe with a speech-to-text provider (default: Hugging Face/or Cohere/Whisper). Provide abstraction so provider can be swapped by changing AI_PROVIDER env var.
+
+AI resolution flow:
+
+Endpoint /api/rooms/:id/generate-resolutions that collects latest N messages from both sides, builds a structured prompt, calls the LLM, and returns exactly 3 resolution objects with {id, title, description, ai_score} and a suggested_best index. Use deterministic output format: JSON block only.
+
+Keep prompt templates in /server/prompts/*.
+
+Provide a server-side rate-limit per user (Redis recommended; fallback in-memory).
+
+Voting & learning:
+
+Endpoint to submit votes; when both users vote, record chosenResolution to DB and record voteTimestamps.
+
+Save analytics for pair-wise personalization (store basic counts).
+
+UI:
+
+Landing page with big center record/type button; left/right panes for each user; bottom center panel displays the 3 AI resolutions.
+
+Each resolution shows AI confidence and a “Select” CTA. When both select same option → show animated “Resolved!” modal.
+
+All unauthenticated clicks redirect to login/register.
+
+Security & privacy:
+
+Do not log API keys.
+
+Provide /api/user/delete for data deletion.
+
+Add rate limits and checks to avoid very long/expensive LLM calls.
+
+Tests, README & deployment:
+
+Minimal end-to-end test (create room, two sockets exchange messages, call generate-resolutions).
+
+README with Replit setup steps, environment variables list, and how to set Google OAuth.
+
+A .replit file or Replit run command to launch both frontend and backend concurrently.
+
+Bonus (if time): Stripe sandbox integration to gate PRO features: unlimited generations, transcription minutes, or export of session history.
+
+Implementation details and constraints:
+
+Use MONGO_URI, JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, AI_PROVIDER_API_KEY, REDIS_URL as environment variables. For Replit, use their secrets panel instructions in README.
+
+AI calls must be encapsulated in /server/services/aiClient.ts with implementations for huggingface, cohere, and openai. The code should default to huggingface.
+
+For prompt engineering: instruct the LLM to return strictly valid JSON in the response body (wrap in triple backticks in logs to help parsing). Provide a strict JSON schema for the response and validate server-side.
+
+Use TypeScript interfaces for critical request/response shapes.
+
+Provide a sample prompt template in /server/prompts/resolve_prompt_v1.txt.
+
+Include CORS, helmet, rate-limiter, and Sentry placeholders.
+
+Provide helpful console logs during dev but ensure NODE_ENV === 'production' turns off verbose logging.
+
+User Experience behavior (must be enforced):
+
+Any interactive button on the public landing page triggers check: if (!user) redirectToLogin().
+
+Registration collects name, age (number), gender (select), email, password. Validate on both client & server.
+
+OAuth: after Google sign-in, create user if not exists and set secure JWT cookie.
+
+Realtime: when a second participant joins, show presence indicator (Joined: user.name).
+
+On generating resolutions: display a loading skeleton and optimistic message; when results arrive, parse JSON and show each option with ai_score and suggested_best flagged.
+
+After vote: if both vote same option → store resolution and push to both clients → show “Resolved” and give an option “Save to history / Export”.
+
+Edge cases & fallbacks:
+
+If LLM returns invalid JSON → retry once and fallback to server-side template-based resolution generator.
+
+Rate-limit users to 3 free resolutions/day by default.
+
+If speech transcription fails, show user the raw audio and allow re-record.
+
+Return format from assistant:
+
+Provide a single commit-ready GitHub-style skeleton with file list and key files fully implemented (server entry, socket handlers, aiClient example, auth routes, React components for Login, Register, Room, Resolutions panel).
+
+Provide step-by-step Replit commands and where to paste secrets.
